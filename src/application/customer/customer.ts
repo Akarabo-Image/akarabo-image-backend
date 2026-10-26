@@ -7,7 +7,7 @@
 export interface Customer {
   id: string;
   name: string;
-  /** Primary contact number — unique across the customer base. */
+  /** Primary contact number; shared contact numbers are allowed. */
   phone: string;
   email?: string;
   address?: string;

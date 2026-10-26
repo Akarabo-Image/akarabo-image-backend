@@ -1,14 +1,13 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { BaseEntity } from '../base.entity';
 
 @Entity('customers')
-@Index('UQ_customers_phone', ['phone'], { unique: true })
 export class CustomerEntity extends BaseEntity {
   /** Contact person or company name. */
   @Column({ length: 200 })
   name: string;
 
-  /** Primary contact number — unique across the customer base. */
+  /** Primary contact number; multiple customers may share a number. */
   @Column({ length: 30 })
   phone: string;
 
@@ -18,7 +17,7 @@ export class CustomerEntity extends BaseEntity {
   @Column({ length: 300, nullable: true })
   address?: string;
 
-  @Column({ length: 500, nullable: true })
+  @Column({ length: 1200, nullable: true })
   notes?: string;
 
   /** Inactive customers cannot be booked — rows are never deleted. */

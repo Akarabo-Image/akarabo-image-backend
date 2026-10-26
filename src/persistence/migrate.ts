@@ -19,8 +19,12 @@ async function run(): Promise<void> {
       await ds.undoLastMigration();
       console.log('Last migration reverted.');
     } else {
-      await ds.runMigrations();
-      console.log('Migrations are up to date.');
+      const applied = await ds.runMigrations();
+      if (applied.length) {
+        console.log(`Applied migrations: ${applied.map(({ name }) => name).join(', ')}`);
+      } else {
+        console.log(`Migrations are up to date (${ds.migrations.length} discovered).`);
+      }
     }
   } finally {
     await ds.destroy();

@@ -8,7 +8,7 @@ import { CustomerRepository } from './customer.repository';
 
 /**
  * Repository tests against a real (in-memory sqljs) database, so the actual
- * SQL behaviour — phone uniqueness, filters, pagination, flag flips — is
+ * SQL behaviour — shared phone numbers, filters, pagination, flag flips — is
  * exercised.
  */
 describe('CustomerRepository', () => {
@@ -95,12 +95,10 @@ describe('CustomerRepository', () => {
     });
   });
 
-  it('rejects duplicate phones at the database level', async () => {
+  it('allows duplicate phones at the database level', async () => {
     await repository.create(newCustomer({ phone: '+250788333333' }));
 
-    await expect(
-      repository.create(newCustomer({ phone: '+250788333333' })),
-    ).rejects.toThrow();
+    await expect(repository.create(newCustomer({ phone: '+250788333333' }))).resolves.toBeDefined();
   });
 
   it('finds by phone', async () => {

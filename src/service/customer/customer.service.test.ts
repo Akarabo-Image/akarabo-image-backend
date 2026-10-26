@@ -9,7 +9,6 @@ import {
 } from '../../application/customer/customer.builder';
 import { CustomerAccessDeniedError } from '../../application/customer/customer-access-denied.error';
 import { CustomerNotFoundError } from '../../application/customer/customer-not-found.error';
-import { DuplicateCustomerPhoneError } from '../../application/customer/duplicate-customer-phone.error';
 import { CUSTOMER_REPOSITORY } from '../../application/customer/customer.repository.interface';
 import { customerRepositoryMock } from '../../application/customer/customer.repository.mock';
 import { CustomerServiceImpl } from './customer.service';
@@ -84,13 +83,11 @@ describe('CustomerService', () => {
       expect(saved.phone).toBe('+250788111222');
     });
 
-    it('rejects a phone that already exists (409)', async () => {
+    it('allows a phone number shared with another customer', async () => {
       customers.findByPhone.mockResolvedValue(customerBuilder().build());
 
-      await expect(service.create(data, manager)).rejects.toThrow(
-        DuplicateCustomerPhoneError,
-      );
-      expect(customers.create).not.toHaveBeenCalled();
+      await expect(service.create(data, manager)).resolves.toBeDefined();
+      expect(customers.create).toHaveBeenCalled();
     });
 
     it('rejects blank names and phone numbers', async () => {
@@ -174,17 +171,15 @@ describe('CustomerService', () => {
       expect(entry.changes?.after).toBeDefined();
     });
 
-    it('rejects moving to a phone that already exists (409)', async () => {
+    it('allows changing to a phone number shared with another customer', async () => {
       const current = customerBuilder().build();
       customers.findById.mockResolvedValue(current);
       customers.findByPhone.mockResolvedValue(
         customerBuilder().withPhone('+250788999999').build(),
       );
 
-      await expect(
-        service.update(current.id, { phone: '+250788999999' }, manager),
-      ).rejects.toThrow(DuplicateCustomerPhoneError);
-      expect(customers.update).not.toHaveBeenCalled();
+      await service.update(current.id, { phone: '+250788999999' }, manager);
+      expect(customers.update).toHaveBeenCalledWith(current.id, { phone: '+250788999999' });
     });
 
     it('keeps its own phone when the phone is not being changed', async () => {

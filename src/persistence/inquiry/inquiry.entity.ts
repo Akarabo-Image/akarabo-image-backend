@@ -11,6 +11,9 @@ export class InquiryEntity extends BaseEntity {
   @Column({ length: 200 })
   email: string;
 
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  phone?: string;
+
   @Column({ length: 40 })
   service: string;
 

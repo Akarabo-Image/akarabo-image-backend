@@ -17,13 +17,20 @@ export class InquiryService {
       ...data,
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
+      phone: data.phone?.trim() || undefined,
       service: data.service.trim(),
       message: data.message?.trim() || undefined,
     }));
   }
 
+  async findOne(id: string): Promise<InquiryEntity> {
+    const inquiry = await this.inquiries.findOneBy({ id });
+    if (!inquiry) throw new NotFoundException('Client enquiry was not found.');
+    return inquiry;
+  }
+
   list(): Promise<InquiryEntity[]> {
-    return this.inquiries.find({ order: { createdAt: 'DESC' }, take: 50 });
+    return this.inquiries.find({ order: { createdAt: 'DESC' } });
   }
 
   async markRead(id: string, actor: AuthUser): Promise<InquiryEntity> {

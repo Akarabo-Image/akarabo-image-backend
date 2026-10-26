@@ -30,7 +30,7 @@ function toDomain(entity: CustomerEntity): Customer {
 
 /**
  * TypeORM adapter for the customer repository port. All queries (pagination,
- * filters, phone uniqueness) live here, away from the business logic.
+ * filters) live here, away from the business logic.
  */
 @Injectable()
 export class CustomerRepository implements CustomerRepositoryPort {

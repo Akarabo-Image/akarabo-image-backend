@@ -21,7 +21,7 @@ export class CreateCustomerDto {
 
   @ApiProperty({
     example: '+250788111222',
-    description: 'Primary contact number — unique across customers',
+    description: 'Primary contact number; multiple customers may share one number',
   })
   @IsString()
   @IsNotEmpty()
@@ -40,10 +40,10 @@ export class CreateCustomerDto {
   @MaxLength(300)
   address?: string;
 
-  @ApiPropertyOptional({ maxLength: 500 })
+  @ApiPropertyOptional({ maxLength: 1200 })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(1200)
   notes?: string;
 }
 
@@ -74,10 +74,10 @@ export class UpdateCustomerDto {
   @MaxLength(300)
   address?: string;
 
-  @ApiPropertyOptional({ maxLength: 500 })
+  @ApiPropertyOptional({ maxLength: 1200 })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(1200)
   notes?: string;
 }
 

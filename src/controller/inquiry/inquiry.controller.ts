@@ -28,6 +28,14 @@ export class InquiryController {
     return this.inquiries.list();
   }
 
+  @Get(':id')
+  @ApiBearerAuth()
+  @Roles(Role.OWNER, Role.MANAGER, Role.CASHIER)
+  @ApiOperation({ summary: 'Get full details for a client enquiry' })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.inquiries.findOne(id);
+  }
+
   @Patch(':id/read')
   @ApiBearerAuth()
   @Roles(Role.OWNER, Role.MANAGER, Role.CASHIER)

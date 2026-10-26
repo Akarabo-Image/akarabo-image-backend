@@ -12,6 +12,12 @@ export class CreateInquiryDto {
   @MaxLength(200)
   email: string;
 
+  @ApiPropertyOptional({ example: '+250788111222', maxLength: 30 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phone?: string;
+
   @ApiProperty({ example: 'Wedding', maxLength: 40 })
   @IsString()
   @Length(2, 40)

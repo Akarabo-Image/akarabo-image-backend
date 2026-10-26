@@ -41,7 +41,7 @@ interface CustomerListBody {
 
 /**
  * Full-stack (real database, real guards) coverage of customers: staff-only
- * registration, phone uniqueness, deactivation-as-delete-replacement.
+ * registration, shared phone numbers, deactivation-as-delete-replacement.
  */
 describe('CustomerController (integration)', () => {
   let app: INestApplication<App>;
@@ -208,16 +208,13 @@ describe('CustomerController (integration)', () => {
       peterId = (response.body as CustomerBody).id;
     });
 
-    it('rejects a duplicate phone (409)', async () => {
+    it('allows a duplicate phone number', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/customers')
         .set(auth(tokens.manager))
         .send({ name: 'Impostor', phone: '+250788111222' })
-        .expect(409);
-
-      const body = response.body as ErrorBody;
-      expect(body.success).toBe(false);
-      expect(body.message).toContain('+250788111222');
+        .expect(201);
+      expect((response.body as CustomerBody).phone).toBe('+250788111222');
     });
 
     it('rejects a missing name (400)', async () => {
@@ -318,14 +315,13 @@ describe('CustomerController (integration)', () => {
       expect((stored.body as CustomerBody).notes).toBe('moved to Rubavu');
     });
 
-    it('rejects moving to a phone that already exists (409)', async () => {
+    it('allows moving to a phone number another customer uses', async () => {
       const response = await request(app.getHttpServer())
         .patch(`/api/v1/customers/${peterId}`)
         .set(auth(tokens.manager))
         .send({ phone: '+250788111222' })
-        .expect(409);
-
-      expect((response.body as ErrorBody).message).toContain('+250788111222');
+        .expect(200);
+      expect((response.body as CustomerBody).phone).toBe('+250788111222');
     });
 
     it('refuses photographers (403)', async () => {

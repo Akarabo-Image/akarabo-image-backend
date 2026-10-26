@@ -5,7 +5,6 @@ import { AuditServiceImpl } from '../audit/audit.service';
 import { InvalidInputError } from '../../application/invalid-input.error';
 import { CustomerAccessDeniedError } from '../../application/customer/customer-access-denied.error';
 import { CustomerNotFoundError } from '../../application/customer/customer-not-found.error';
-import { DuplicateCustomerPhoneError } from '../../application/customer/duplicate-customer-phone.error';
 import type { Customer } from '../../application/customer/customer';
 import { CUSTOMER_REPOSITORY } from '../../application/customer/customer.repository.interface';
 import type {
@@ -25,7 +24,7 @@ const MANAGE_ROLES: Role[] = [Role.MANAGER, Role.OWNER];
 const REGISTER_ROLES: Role[] = [...MANAGE_ROLES, Role.CASHIER, Role.PHOTOGRAPHER];
 
 /**
- * Customer use cases. Business rules live here (phone uniqueness, active
+ * Customer use cases. Business rules live here (active
  * flags, who may edit); all data access goes through the CustomerRepository
  * port, so this class is unit-testable in isolation.
  *
@@ -53,10 +52,6 @@ export class CustomerServiceImpl implements CustomerService {
     if (!phone) {
       throw new InvalidInputError('Customer phone is required');
     }
-    if (await this.customers.findByPhone(phone)) {
-      throw new DuplicateCustomerPhoneError(phone);
-    }
-
     const customer = await this.customers.create({
       name,
       phone,
@@ -116,14 +111,6 @@ export class CustomerServiceImpl implements CustomerService {
     if (data.phone !== undefined && !updates.phone) {
       throw new InvalidInputError('Customer phone is required');
     }
-    if (
-      updates.phone !== undefined &&
-      updates.phone !== existing.phone &&
-      (await this.customers.findByPhone(updates.phone))
-    ) {
-      throw new DuplicateCustomerPhoneError(updates.phone);
-    }
-
     if (Object.keys(updates).length === 0) {
       return existing;
     }
