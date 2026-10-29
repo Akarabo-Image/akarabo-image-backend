@@ -31,6 +31,8 @@ import { PaymentEntity } from '../persistence/payment/payment.entity';
 import { UserEntity } from '../persistence/user/user.entity';
 import { StudioReportService, STUDIO_REPORT_SERVICE } from '../service/report/studio-report.service';
 import { PhotographerTaskEntity } from '../persistence/photographer-task/photographer-task.entity';
+import { PushTokenEntity } from '../persistence/notification/push-token.entity';
+import { PushNotificationService } from '../service/notification/push-notification.service';
 
 /** Provides every application service (business logic layer). */
 @Module({
@@ -41,7 +43,7 @@ import { PhotographerTaskEntity } from '../persistence/photographer-task/photogr
       useFactory: jwtModuleOptionsFactory,
     }),
     RepositoryModule,
-    TypeOrmModule.forFeature([InquiryEntity, StudioServiceEntity, PhotographerWorkEntity, PhotographerTaskEntity, CustomerEntity, PaymentEntity, UserEntity]),
+    TypeOrmModule.forFeature([InquiryEntity, StudioServiceEntity, PhotographerWorkEntity, PhotographerTaskEntity, CustomerEntity, PaymentEntity, UserEntity, PushTokenEntity]),
   ],
   providers: [
     UserServiceImpl,
@@ -52,6 +54,7 @@ import { PhotographerTaskEntity } from '../persistence/photographer-task/photogr
     CustomerServiceImpl,
     BookingServiceImpl,
     InquiryService,
+    PushNotificationService,
     StudioReportService,
     JwtStrategy,
     {
@@ -85,6 +88,7 @@ import { PhotographerTaskEntity } from '../persistence/photographer-task/photogr
     CustomerServiceImpl,
     BookingServiceImpl,
     InquiryService,
+    PushNotificationService,
   ],
 })
 export class ServiceModule {}

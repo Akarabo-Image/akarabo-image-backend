@@ -25,6 +25,10 @@ export default () => ({
     secret: process.env.JWT_SECRET ?? 'change-me-in-env',
     expiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
   },
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    serviceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+  },
   seed: {
     ownerName: process.env.SEED_OWNER_NAME ?? 'Studio Owner',
     ownerEmail: process.env.SEED_OWNER_EMAIL ?? 'owner@akarabo.rw',

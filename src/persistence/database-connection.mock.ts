@@ -6,6 +6,7 @@ import { CustomerEntity } from './customer/customer.entity';
 import { ExpenseEntity } from './expense/expense.entity';
 import { PaymentEntity } from './payment/payment.entity';
 import { UserEntity } from './user/user.entity';
+import { StudioServiceEntity } from './studio-service/studio-service.entity';
 
 /**
  * In-memory sqljs database with the schema synchronized from the entities —
@@ -24,6 +25,7 @@ export function createInMemoryDatabase(): Promise<DataSource> {
       ExpenseEntity,
       CustomerEntity,
       BookingEntity,
+      StudioServiceEntity,
     ],
   }).initialize();
 }

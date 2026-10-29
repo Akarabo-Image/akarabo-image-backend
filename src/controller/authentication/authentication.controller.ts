@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  InternalServerErrorException,
   Post,
   Req,
 } from '@nestjs/common';
@@ -24,6 +25,7 @@ import type { AuthUser } from '../../application/auth-user';
 import { Public } from '../public.decorator';
 import { LoginRequestDto } from './login.request-dto';
 import { LoginResponseDto, LogoutResponseDto } from './login.response-dto';
+import { AuthenticationError } from '../../application/authentication/authentication.error';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -38,8 +40,15 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Exchange credentials for a 1-day access token' })
   @ApiOkResponse({ type: LoginResponseDto })
-  login(@Body() dto: LoginRequestDto, @Req() req: Request) {
-    return this.authenticationService.login(dto, req.ip);
+  async login(@Body() dto: LoginRequestDto, @Req() req: Request) {
+    try {
+      return await this.authenticationService.login(dto, req.ip);
+    } catch (error) {
+      if (error instanceof AuthenticationError) throw error;
+
+      // Keep database, hash and token errors out of the public response.
+      throw new InternalServerErrorException('Unable to process login');
+    }
   }
 
   @Post('logout')

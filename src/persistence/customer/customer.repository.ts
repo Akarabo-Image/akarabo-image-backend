@@ -45,7 +45,20 @@ export class CustomerRepository implements CustomerRepositoryPort {
 
     const qb = this.customers
       .createQueryBuilder('customer')
-      .orderBy('customer.createdAt', 'DESC')
+      // Keep clients whose delivery is still in progress (and clients without
+      // a service record yet) at the top, then show newest registrations first.
+      .orderBy(
+        `CASE WHEN EXISTS (` +
+          `SELECT 1 FROM studio_services pending_service ` +
+          `WHERE pending_service."customerId" = customer.id ` +
+          `AND pending_service.status <> 'SERVED') ` +
+          `OR NOT EXISTS (` +
+          `SELECT 1 FROM studio_services any_service ` +
+          `WHERE any_service."customerId" = customer.id) ` +
+          `THEN 0 ELSE 1 END`,
+        'ASC',
+      )
+      .addOrderBy('customer.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);
 

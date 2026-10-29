@@ -413,6 +413,13 @@ describe('PaymentController (integration)', () => {
       expect(report.body.photographerTotals).toEqual(expect.arrayContaining([expect.objectContaining({ photographerUserId: photographerId, photosAssigned: 4, photosEdited: 3 })]));
       expect(report.body.photographerTasks).toEqual(expect.arrayContaining([expect.objectContaining({ id: assignmentId, status: 'COMPLETED', editedPhotos: 3 })]));
 
+      // Delivery is allowed only after the full agreed balance has been paid.
+      await request(app.getHttpServer())
+        .post('/api/v1/payments')
+        .set(auth(tokens.cashier))
+        .send({ studioServiceId: serviceId, amount: 55000, method: 'CASH' })
+        .expect(201);
+
       await request(app.getHttpServer())
         .patch(`/api/v1/studio-services/${serviceId}/status`)
         .set(auth(tokens.cashier))
@@ -423,7 +430,7 @@ describe('PaymentController (integration)', () => {
         .set(auth(tokens.owner))
         .expect(200);
       expect(refreshed.body.clients).toEqual(expect.arrayContaining([
-        expect.objectContaining({ id: serviceId, paidAmount: 45000, remainingAmount: 55000, serviceStatus: 'SERVED', needsUrgentService: false }),
+        expect.objectContaining({ id: serviceId, paidAmount: 100000, remainingAmount: 0, serviceStatus: 'SERVED', needsUrgentService: false }),
       ]));
       expect(refreshed.body.urgentClients).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: serviceId })]));
       expect(refreshed.body.servedClients).toEqual(expect.arrayContaining([expect.objectContaining({ id: serviceId })]));

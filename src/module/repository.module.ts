@@ -19,6 +19,7 @@ import { PaymentRepository } from '../persistence/payment/payment.repository';
 import { UserEntity } from '../persistence/user/user.entity';
 import { InquiryEntity } from '../persistence/inquiry/inquiry.entity';
 import { UserRepository } from '../persistence/user/user.repository';
+import { PushTokenEntity } from '../persistence/notification/push-token.entity';
 
 /**
  * Global persistence module: binds each application repository port
@@ -35,6 +36,7 @@ import { UserRepository } from '../persistence/user/user.repository';
       CustomerEntity,
       BookingEntity,
       InquiryEntity,
+      PushTokenEntity,
     ]),
   ],
   providers: [

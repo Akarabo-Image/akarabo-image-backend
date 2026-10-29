@@ -348,7 +348,8 @@ describe('CustomerController (integration)', () => {
         .set(auth(tokens.cashier))
         .expect(200);
       expect((stored.body as CustomerBody).isActive).toBe(false);
-      expect((stored.body as CustomerBody).phone).toBe('+250788222333');
+      // The earlier update test moves this customer to the shared phone.
+      expect((stored.body as CustomerBody).phone).toBe('+250788111222');
     });
 
     it('is idempotent — deactivating twice still succeeds (200)', async () => {

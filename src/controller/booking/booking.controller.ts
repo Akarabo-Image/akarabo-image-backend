@@ -26,6 +26,7 @@ import {
 import { CurrentUser } from '../current-user.decorator';
 import { Roles } from '../roles.decorator';
 import { Role } from '../../util/roles';
+import { PushNotificationService } from '../../service/notification/push-notification.service';
 import {
   BookingResponseDto,
   CancelBookingDto,
@@ -40,6 +41,8 @@ import {
 export class BookingController {
   constructor(
     @Inject(BOOKING_SERVICE) private readonly bookingsService: BookingService,
+    @Inject(PushNotificationService)
+    private readonly notifications: PushNotificationService,
   ) {}
 
   @Post()
@@ -48,19 +51,29 @@ export class BookingController {
     summary: 'Book the studio for a customer (manager/owner)',
   })
   @ApiOkResponse({ type: BookingResponseDto })
-  create(@Body() dto: CreateBookingDto, @CurrentUser() actor: AuthUser) {
-    return this.bookingsService.create(dto, actor);
+  async create(@Body() dto: CreateBookingDto, @CurrentUser() actor: AuthUser) {
+    const booking = await this.bookingsService.create(dto, actor);
+    await this.notifications.notifyManagers(
+      'New booking',
+      `${booking.serviceType} booking for ${booking.eventDate}`,
+      {
+        type: 'new_booking',
+        bookingId: booking.id,
+        route: `/bookings/${booking.id}`,
+      },
+    );
+    return booking;
   }
 
   @Get()
-  @Roles(Role.OWNER, Role.MANAGER, Role.CASHIER)
+  @Roles(Role.OWNER, Role.MANAGER, Role.CASHIER, Role.PHOTOGRAPHER)
   @ApiOperation({ summary: 'List bookings with filters and pagination' })
   findAll(@Query() query: QueryBookingsDto) {
     return this.bookingsService.findAll(query);
   }
 
   @Get(':id')
-  @Roles(Role.OWNER, Role.MANAGER, Role.CASHIER)
+  @Roles(Role.OWNER, Role.MANAGER, Role.CASHIER, Role.PHOTOGRAPHER)
   @ApiOperation({ summary: 'Get one booking by id' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: BookingResponseDto })

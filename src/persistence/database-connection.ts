@@ -12,6 +12,7 @@ import { StudioServiceEntity } from './studio-service/studio-service.entity';
 import { PhotographerWorkEntity } from './photographer-work/photographer-work.entity';
 import { PhotographerTaskEntity } from './photographer-task/photographer-task.entity';
 import { InquiryEntity } from './inquiry/inquiry.entity';
+import { PushTokenEntity } from './notification/push-token.entity';
 
 // The DataSource below is built at module import time — before any caller's
 // main() can call loadEnv() — so .env is applied here, at the top.
@@ -40,6 +41,7 @@ function buildDataSource(): DataSource {
       PhotographerWorkEntity,
       PhotographerTaskEntity,
       InquiryEntity,
+      PushTokenEntity,
     ],
     migrations: ['migrations/*.ts'],
     migrationsTableName: 'migrations',

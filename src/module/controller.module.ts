@@ -8,6 +8,7 @@ import { UserController } from '../controller/user/user.controller';
 import { InquiryController } from '../controller/inquiry/inquiry.controller';
 import { ServiceModule } from './service.module';
 import { StudioReportController } from '../controller/report/studio-report.controller';
+import { NotificationController } from '../controller/notification/notification.controller';
 
 /** Provides every controller (HTTP layer). */
 @Module({
@@ -21,6 +22,7 @@ import { StudioReportController } from '../controller/report/studio-report.contr
     BookingController,
     InquiryController,
     StudioReportController,
+    NotificationController,
   ],
 })
 export class ControllerModule {}

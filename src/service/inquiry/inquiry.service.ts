@@ -1,19 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { AuthUser } from '../../application/auth-user';
 import { CreateInquiryDto } from '../../controller/inquiry/inquiry.dto';
 import { InquiryEntity } from '../../persistence/inquiry/inquiry.entity';
+import { PushNotificationService } from '../notification/push-notification.service';
 
 @Injectable()
 export class InquiryService {
   constructor(
     @InjectRepository(InquiryEntity)
     private readonly inquiries: Repository<InquiryEntity>,
+    @Optional() private readonly notifications?: PushNotificationService,
   ) {}
 
-  create(data: CreateInquiryDto): Promise<InquiryEntity> {
-    return this.inquiries.save(this.inquiries.create({
+  async create(data: CreateInquiryDto): Promise<InquiryEntity> {
+    const inquiry = await this.inquiries.save(this.inquiries.create({
       ...data,
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
@@ -21,6 +23,17 @@ export class InquiryService {
       service: data.service.trim(),
       message: data.message?.trim() || undefined,
     }));
+    const dateText = inquiry.preferredDate ? ` for ${inquiry.preferredDate}` : '';
+    await this.notifications?.notifyManagers(
+      'New client message',
+      `${inquiry.name} · ${inquiry.service}${dateText}`,
+      {
+        type: 'client_message',
+        inquiryId: inquiry.id,
+        route: `/inquiries/${inquiry.id}`,
+      },
+    );
+    return inquiry;
   }
 
   async findOne(id: string): Promise<InquiryEntity> {
@@ -30,7 +43,7 @@ export class InquiryService {
   }
 
   list(): Promise<InquiryEntity[]> {
-    return this.inquiries.find({ order: { createdAt: 'DESC' } });
+    return this.inquiries.find({ order: { createdAt: 'DESC' }, take: 50 });
   }
 
   async markRead(id: string, actor: AuthUser): Promise<InquiryEntity> {

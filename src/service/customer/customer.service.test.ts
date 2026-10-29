@@ -106,10 +106,10 @@ describe('CustomerService', () => {
       expect(customers.create).toHaveBeenCalledWith(expect.objectContaining({ createdByUserId: cashier.id }));
     });
 
-    it('refuses photographers', async () => {
-      await expect(service.create(data, photographer)).rejects.toThrow(
-        CustomerAccessDeniedError,
-      );
+    it('allows photographers to register customers', async () => {
+      const created = await service.create(data, photographer);
+      expect(created.createdByUserId).toBe(photographer.id);
+      expect(customers.create).toHaveBeenCalledWith(expect.objectContaining({ createdByUserId: photographer.id }));
     });
   });
 

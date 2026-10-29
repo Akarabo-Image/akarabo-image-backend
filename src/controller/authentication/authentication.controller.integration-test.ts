@@ -5,6 +5,8 @@ import { DataSource } from 'typeorm';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { MainModule } from '../../main.module';
+import { AUTHENTICATION_SERVICE } from '../../service/authentication/authentication.service.interface';
+import type { AuthenticationService } from '../../service/authentication/authentication.service.interface';
 import { Role } from '../../util/roles';
 import { UserEntity } from '../../persistence/user/user.entity';
 import { setupApp, useInMemoryDatabase } from '../../setup-app';
@@ -121,6 +123,25 @@ describe('AuthenticationController (integration)', () => {
       expect((response.body as ErrorBody).message).toBe(
         'Invalid email or password',
       );
+    });
+
+    it('returns a generic 500 when an internal login dependency fails', async () => {
+      const authenticationService = app.get<AuthenticationService>(AUTHENTICATION_SERVICE);
+      const loginSpy = jest
+        .spyOn(authenticationService, 'login')
+        .mockRejectedValueOnce(new Error('database credential detail'));
+
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({
+          email: ownerCredentials.email,
+          password: ownerCredentials.password,
+        })
+        .expect(500);
+
+      expect((response.body as ErrorBody).message).toBe('Unable to process login');
+      expect(JSON.stringify(response.body)).not.toContain('database credential detail');
+      loginSpy.mockRestore();
     });
 
     it('returns 400 for an invalid payload', async () => {

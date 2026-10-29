@@ -53,19 +53,25 @@ export class AuthenticationServiceImpl implements AuthenticationService {
       throw new AuthenticationError();
     }
 
-    const accessToken = await this.jwtService.signAsync({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    await this.users.updateLastLogin(user.id, this.time.now());
-    await this.audit.log({
-      userId: user.id,
-      action: 'LOGIN',
-      entity: 'Auth',
-      ipAddress,
-    });
+    // Signing the token and recording login metadata are independent. Run
+    // them together so the response pays the time of the slower operation,
+    // not the sum of both database/crypto steps.
+    const [accessToken] = await Promise.all([
+      this.jwtService.signAsync({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      }),
+      this.users.updateLastLogin(user.id, this.time.now()),
+      // AuditServiceImpl deliberately catches write failures (audit is
+      // best-effort), so it is safe to run concurrently with login metadata.
+      this.audit.log({
+        userId: user.id,
+        action: 'LOGIN',
+        entity: 'Auth',
+        ipAddress,
+      }),
+    ]);
 
     return {
       accessToken,
