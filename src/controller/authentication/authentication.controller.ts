@@ -38,7 +38,7 @@ export class AuthenticationController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Exchange credentials for a 1-day access token' })
+  @ApiOperation({ summary: 'Exchange credentials for a 30-day access token' })
   @ApiOkResponse({ type: LoginResponseDto })
   async login(@Body() dto: LoginRequestDto, @Req() req: Request) {
     try {

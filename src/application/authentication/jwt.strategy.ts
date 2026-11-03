@@ -12,7 +12,7 @@ export interface JwtPayload {
 }
 
 /**
- * Validates incoming Bearer tokens. Tokens are valid for 1 day (JWT_EXPIRES_IN)
+ * Validates incoming Bearer tokens. Tokens default to 30 days (JWT_EXPIRES_IN)
  * and carry the user id, email and role.
  */
 @Injectable()

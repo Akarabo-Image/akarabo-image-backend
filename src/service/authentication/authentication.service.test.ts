@@ -40,7 +40,7 @@ describe('AuthenticationService', () => {
         { provide: USER_REPOSITORY, useValue: users },
         { provide: JwtService, useValue: jwtService },
         { provide: AuditServiceImpl, useValue: audit },
-        { provide: AUTHENTICATION_CONFIG, useValue: { expiresIn: '1d' } },
+        { provide: AUTHENTICATION_CONFIG, useValue: { expiresIn: '30d' } },
         { provide: ConfigService, useValue: { getOrThrow: () => '1d' } },
         { provide: TIME_PROVIDER, useValue: timeProviderMock() },
       ],
@@ -63,7 +63,7 @@ describe('AuthenticationService', () => {
       });
 
       expect(result.accessToken).toBe('signed-token');
-      expect(result.expiresIn).toBe('1d');
+      expect(result.expiresIn).toBe('30d');
       expect(result.user).not.toHaveProperty('passwordHash');
       expect(result.user.email).toBe(owner.email);
       expect(users.updateLastLogin).toHaveBeenCalledWith(

@@ -98,7 +98,7 @@ describe('AuthenticationController (integration)', () => {
 
       const body = response.body as LoginBody;
       expect(body.accessToken).toEqual(expect.any(String));
-      expect(body.expiresIn).toBe('1d');
+      expect(body.expiresIn).toBe('30d');
       expect(body.user.email).toBe(ownerCredentials.email);
       expect(body.user).not.toHaveProperty('passwordHash');
     });

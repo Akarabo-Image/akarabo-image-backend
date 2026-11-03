@@ -7,7 +7,7 @@ NestJS + TypeScript backend for **Akarabo Studio** (weddings, birthdays, baby sh
 - **NestJS 11** (TypeScript, ES module imports/exports)
 - **PostgreSQL** in development/production — with a zero-setup embedded fallback (`sqljs`) so the project runs without a local Postgres server
 - **TypeORM** (chosen for native NestJS DI, real `EntityManager` transactions, DB-level constraints and migration tooling)
-- **JWT** authentication (1-day tokens) + **bcryptjs** password hashing
+- **JWT** authentication (30-day tokens by default) + **bcryptjs** password hashing
 - **class-validator / class-transformer** DTO validation (global `ValidationPipe`)
 - **Swagger** for API exploration and testing
 

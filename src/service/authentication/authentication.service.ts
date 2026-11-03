@@ -81,9 +81,9 @@ export class AuthenticationServiceImpl implements AuthenticationService {
   }
 
   /**
-   * Tokens are stateless and valid for one day; logout records the action in
-   * the audit trail and the client discards its token. (Token blacklisting /
-   * refresh-token rotation can be added here later if needed.)
+   * Tokens are stateless and valid for 30 days by default; logout records the
+   * action in the audit trail and the client discards its token. The configured
+   * JWT_EXPIRES_IN value can override the default.
    */
   async logout(user: AuthUser, ipAddress?: string): Promise<LogoutResult> {
     await this.audit.log({
