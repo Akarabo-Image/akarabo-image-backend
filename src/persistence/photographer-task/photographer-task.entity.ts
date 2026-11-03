@@ -8,7 +8,10 @@ export enum PhotographerTaskStatus {
 }
 
 @Entity('photographer_tasks')
-@Index('IDX_photographer_tasks_assignee_day', ['photographerUserId', 'taskDate'])
+@Index('IDX_photographer_tasks_assignee_day', [
+  'photographerUserId',
+  'taskDate',
+])
 export class PhotographerTaskEntity extends BaseEntity {
   @Column({ type: 'uuid' })
   studioServiceId: string;
@@ -25,7 +28,11 @@ export class PhotographerTaskEntity extends BaseEntity {
   @Column({ type: 'int', nullable: true })
   editedPhotos?: number;
 
-  @Column({ type: 'varchar', length: 20, default: PhotographerTaskStatus.ASSIGNED })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: PhotographerTaskStatus.ASSIGNED,
+  })
   status: PhotographerTaskStatus;
 
   @Column({ type: 'varchar', length: 500, nullable: true })

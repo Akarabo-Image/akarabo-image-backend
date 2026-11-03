@@ -28,6 +28,7 @@ export default () => ({
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,
     serviceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+    serviceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
   },
   seed: {
     ownerName: process.env.SEED_OWNER_NAME ?? 'Studio Owner',

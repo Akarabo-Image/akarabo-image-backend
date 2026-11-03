@@ -26,6 +26,8 @@ import { Public } from '../public.decorator';
 import { LoginRequestDto } from './login.request-dto';
 import { LoginResponseDto, LogoutResponseDto } from './login.response-dto';
 import { AuthenticationError } from '../../application/authentication/authentication.error';
+import { Role } from '../../util/roles';
+import { PushNotificationService } from '../../service/notification/push-notification.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -33,6 +35,8 @@ export class AuthenticationController {
   constructor(
     @Inject(AUTHENTICATION_SERVICE)
     private readonly authenticationService: AuthenticationService,
+    @Inject(PushNotificationService)
+    private readonly notifications: PushNotificationService,
   ) {}
 
   @Public()
@@ -42,7 +46,19 @@ export class AuthenticationController {
   @ApiOkResponse({ type: LoginResponseDto })
   async login(@Body() dto: LoginRequestDto, @Req() req: Request) {
     try {
-      return await this.authenticationService.login(dto, req.ip);
+      const result = await this.authenticationService.login(dto, req.ip);
+      if (
+        result.user.role === Role.OWNER ||
+        result.user.role === Role.MANAGER
+      ) {
+        await this.notifications.notifyUser(
+          result.user.id,
+          'New account sign-in',
+          `Akarabo Studio account sign-in detected for ${result.user.fullName}.`,
+          { type: 'auth_login', route: '/' },
+        );
+      }
+      return result;
     } catch (error) {
       if (error instanceof AuthenticationError) throw error;
 
@@ -56,8 +72,17 @@ export class AuthenticationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Record logout in the audit trail' })
   @ApiOkResponse({ type: LogoutResponseDto })
-  logout(@CurrentUser() user: AuthUser, @Req() req: Request) {
-    return this.authenticationService.logout(user, req.ip);
+  async logout(@CurrentUser() user: AuthUser, @Req() req: Request) {
+    const result = await this.authenticationService.logout(user, req.ip);
+    if (user.role === Role.OWNER || user.role === Role.MANAGER) {
+      await this.notifications.notifyUser(
+        user.id,
+        'Account signed out',
+        'Your Akarabo Studio account was signed out.',
+        { type: 'auth_logout', route: '/login' },
+      );
+    }
+    return result;
   }
 
   @Get('me')

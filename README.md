@@ -43,6 +43,14 @@ can apply them in any environment.
 
 > `DB_SYNCHRONIZE=true` exists only for quick local prototyping — never use it in production.
 
+### Firebase push notifications
+
+Push alerts are sent by the Nest `PushNotificationService` to registered devices
+for active managers/owners. Configure `FIREBASE_PROJECT_ID` and either
+`FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_SERVICE_ACCOUNT_PATH`, or
+`GOOGLE_APPLICATION_CREDENTIALS`. Keep service-account files outside source
+control; `serviceAccountKey.json` files are ignored by Git.
+
 ## Scripts
 
 | Command | Purpose |

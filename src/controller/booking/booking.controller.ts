@@ -88,12 +88,18 @@ export class BookingController {
   })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: BookingResponseDto })
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateBookingDto,
     @CurrentUser() actor: AuthUser,
   ) {
-    return this.bookingsService.update(id, dto, actor);
+    const booking = await this.bookingsService.update(id, dto, actor);
+    await this.notifyManagers(
+      'Booking updated',
+      `${booking.serviceType} booking for ${booking.eventDate} was updated`,
+      booking.id,
+    );
+    return booking;
   }
 
   @Post(':id/confirm')
@@ -102,11 +108,17 @@ export class BookingController {
   @ApiOperation({ summary: 'Confirm a pending booking (manager/owner)' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: BookingResponseDto })
-  confirm(
+  async confirm(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() actor: AuthUser,
   ) {
-    return this.bookingsService.confirm(id, actor);
+    const booking = await this.bookingsService.confirm(id, actor);
+    await this.notifyManagers(
+      'Booking confirmed',
+      `${booking.serviceType} booking for ${booking.eventDate} was confirmed`,
+      booking.id,
+    );
+    return booking;
   }
 
   @Post(':id/complete')
@@ -117,11 +129,17 @@ export class BookingController {
   })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: BookingResponseDto })
-  complete(
+  async complete(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() actor: AuthUser,
   ) {
-    return this.bookingsService.complete(id, actor);
+    const booking = await this.bookingsService.complete(id, actor);
+    await this.notifyManagers(
+      'Booking completed',
+      `${booking.serviceType} booking for ${booking.eventDate} was completed`,
+      booking.id,
+    );
+    return booking;
   }
 
   @Post(':id/cancel')
@@ -132,11 +150,25 @@ export class BookingController {
   })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: BookingResponseDto })
-  cancel(
+  async cancel(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CancelBookingDto,
     @CurrentUser() actor: AuthUser,
   ) {
-    return this.bookingsService.cancel(id, dto.reason, actor);
+    const booking = await this.bookingsService.cancel(id, dto.reason, actor);
+    await this.notifyManagers(
+      'Booking cancelled',
+      `${booking.serviceType} booking for ${booking.eventDate} was cancelled`,
+      booking.id,
+    );
+    return booking;
+  }
+
+  private notifyManagers(title: string, body: string, bookingId: string) {
+    return this.notifications.notifyManagers(title, body, {
+      type: 'booking_update',
+      bookingId,
+      route: `/bookings/${bookingId}`,
+    });
   }
 }
