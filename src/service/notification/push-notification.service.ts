@@ -68,13 +68,14 @@ export class PushNotificationService {
         const result = await messaging.sendEachForMulticast({
           tokens: batch.map(({ token }) => token),
           notification: { title, body },
-          data,
+          data: { ...data, title, body },
           android: {
             priority: 'high',
             notification: {
               channelId: ANDROID_ALERT_CHANNEL_ID,
               sound: 'default',
               priority: 'max',
+              visibility: 'public',
             },
           },
         });
