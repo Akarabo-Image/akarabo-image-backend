@@ -22,13 +22,14 @@ let credential;
 if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
   try {
     credential = cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON));
-  } catch (error) {
+  } catch {
     console.error(
-      '[FCM] Could not parse FIREBASE_SERVICE_ACCOUNT_JSON:',
-      error.message,
+      '[FCM] Could not parse FIREBASE_SERVICE_ACCOUNT_JSON; check that it contains valid service-account JSON.',
     );
   }
-} else if (fs.existsSync(serviceAccountPath)) {
+}
+
+if (!credential && fs.existsSync(serviceAccountPath)) {
   try {
     credential = cert(require(path.resolve(serviceAccountPath)));
   } catch (error) {
@@ -37,7 +38,9 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
       error.message,
     );
   }
-} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+}
+
+if (!credential && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   credential = applicationDefault();
 }
 

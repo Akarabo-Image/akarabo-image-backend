@@ -7,6 +7,7 @@ import type { App } from 'supertest/types';
 import { MainModule } from '../../main.module';
 import { Role } from '../../util/roles';
 import { UserEntity } from '../../persistence/user/user.entity';
+import { PushNotificationService } from '../../service/notification/push-notification.service';
 import { setupApp, useInMemoryDatabase } from '../../setup-app';
 
 useInMemoryDatabase();
@@ -157,8 +158,15 @@ describe('PaymentController (integration)', () => {
     });
 
     it('denies cashiers access to payments', async () => {
-      await request(app.getHttpServer()).get('/api/v1/payments').set(auth(tokens.cashier)).expect(403);
-      await request(app.getHttpServer()).post('/api/v1/payments').set(auth(tokens.cashier)).send(paymentPayload).expect(403);
+      await request(app.getHttpServer())
+        .get('/api/v1/payments')
+        .set(auth(tokens.cashier))
+        .expect(403);
+      await request(app.getHttpServer())
+        .post('/api/v1/payments')
+        .set(auth(tokens.cashier))
+        .send(paymentPayload)
+        .expect(403);
     });
 
     it('manager records a payment attributed to themselves', async () => {
@@ -350,6 +358,10 @@ describe('PaymentController (integration)', () => {
 
   describe('cashier and photographer studio reporting', () => {
     it('reports receipts, urgency, and photo work and notifies assigned photographers', async () => {
+      const notifications = app.get(PushNotificationService);
+      const notifyUser = jest
+        .spyOn(notifications, 'notifyUser')
+        .mockResolvedValue();
       const reportDate = new Date().toISOString().slice(0, 10);
       const customerResponse = await request(app.getHttpServer())
         .post('/api/v1/customers')
@@ -361,7 +373,15 @@ describe('PaymentController (integration)', () => {
       const serviceResponse = await request(app.getHttpServer())
         .post('/api/v1/studio-services')
         .set(auth(tokens.cashier))
-        .send({ customerId, serviceDate: reportDate, photosTaken: 6, softPhotos: 4, hardPhotos: 2, totalAmount: 100000, needsUrgentService: true })
+        .send({
+          customerId,
+          serviceDate: reportDate,
+          photosTaken: 6,
+          softPhotos: 4,
+          hardPhotos: 2,
+          totalAmount: 100000,
+          needsUrgentService: true,
+        })
         .expect(201);
       const serviceId = serviceResponse.body.id as string;
 
@@ -374,44 +394,138 @@ describe('PaymentController (integration)', () => {
       await request(app.getHttpServer())
         .post('/api/v1/photographer-work')
         .set(auth(tokens.photographer))
-        .send({ workDate: reportDate, editedPhotos: 13, notes: 'Family portraits' })
+        .send({
+          workDate: reportDate,
+          editedPhotos: 13,
+          notes: 'Family portraits',
+        })
         .expect(201);
 
       const assignment = await request(app.getHttpServer())
         .post('/api/v1/photographer-tasks')
         .set(auth(tokens.cashier))
-        .send({ studioServiceId: serviceId, photographerUserId: photographerId, taskDate: reportDate, photosToEdit: 4, notes: 'Prioritize edits' })
+        .send({
+          studioServiceId: serviceId,
+          photographerUserId: photographerId,
+          taskDate: reportDate,
+          photosToEdit: 4,
+          notes: 'Prioritize edits',
+        })
         .expect(201);
       const assignmentId = assignment.body.id as string;
+      expect(notifyUser).toHaveBeenCalledWith(
+        photographerId,
+        'New Task Assigned',
+        expect.stringContaining('4 photos'),
+        expect.objectContaining({
+          type: 'photographer_task_assigned',
+          taskId: assignmentId,
+          studioServiceId: serviceId,
+        }),
+      );
       const photographerTasks = await request(app.getHttpServer())
         .get('/api/v1/photographer-tasks/mine')
         .set(auth(tokens.photographer))
         .expect(200);
-      expect(photographerTasks.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: assignmentId, customerName: 'Report Client', readAt: null, status: 'ASSIGNED' })]));
-      await request(app.getHttpServer()).patch(`/api/v1/photographer-tasks/${assignmentId}/read`).set(auth(tokens.photographer)).expect(200);
-      await request(app.getHttpServer()).patch(`/api/v1/photographer-tasks/${assignmentId}/status`).set(auth(tokens.photographer)).send({ status: 'IN_PROGRESS' }).expect(200);
-      await request(app.getHttpServer()).patch(`/api/v1/photographer-tasks/${assignmentId}/status`).set(auth(tokens.photographer)).send({ status: 'COMPLETED', editedPhotos: 3 }).expect(200);
+      expect(photographerTasks.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: assignmentId,
+            customerName: 'Report Client',
+            readAt: null,
+            status: 'ASSIGNED',
+          }),
+        ]),
+      );
+      await request(app.getHttpServer())
+        .patch(`/api/v1/photographer-tasks/${assignmentId}/read`)
+        .set(auth(tokens.photographer))
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/api/v1/photographer-tasks/${assignmentId}/status`)
+        .set(auth(tokens.photographer))
+        .send({ status: 'IN_PROGRESS' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/api/v1/photographer-tasks/${assignmentId}/status`)
+        .set(auth(tokens.photographer))
+        .send({ status: 'COMPLETED', editedPhotos: 3 })
+        .expect(200);
       await request(app.getHttpServer())
         .post('/api/v1/photographer-tasks')
         .set(auth(tokens.cashier))
-        .send({ studioServiceId: serviceId, photographerUserId: photographerId, taskDate: reportDate, photosToEdit: 3 })
+        .send({
+          studioServiceId: serviceId,
+          photographerUserId: photographerId,
+          taskDate: reportDate,
+          photosToEdit: 3,
+        })
         .expect(400);
 
       const report = await request(app.getHttpServer())
         .get(`/api/v1/studio-reports?from=${reportDate}&to=${reportDate}`)
         .set(auth(tokens.manager))
         .expect(200);
-      expect(report.body.summary).toEqual(expect.objectContaining({ clientCount: expect.any(Number), photosTaken: expect.any(Number), moneyReceived: expect.any(Number) }));
-      expect(report.body.payments).toEqual(expect.arrayContaining([expect.objectContaining({ customerName: 'Report Client', amount: 45000, receivedBy: 'Test Cashier' })]));
-      expect(report.body.urgentClients).toEqual(expect.arrayContaining([expect.objectContaining({ id: serviceId })]));
-      expect(report.body.clients).toEqual(expect.arrayContaining([
-        expect.objectContaining({ customerName: 'Report Client', phoneNumber: '+250788990777', photosTaken: 6, softPhotos: 4, hardPhotos: 2, paidAmount: 45000, remainingAmount: 55000, serviceStatus: 'IN_PROGRESS' }),
-      ]));
-      expect(report.body.photographerWork).toEqual(expect.arrayContaining([
-        expect.objectContaining({ photographerName: 'Test Photographer', editedPhotos: 13, notes: 'Family portraits' }),
-      ]));
-      expect(report.body.photographerTotals).toEqual(expect.arrayContaining([expect.objectContaining({ photographerUserId: photographerId, photosAssigned: 4, photosEdited: 3 })]));
-      expect(report.body.photographerTasks).toEqual(expect.arrayContaining([expect.objectContaining({ id: assignmentId, status: 'COMPLETED', editedPhotos: 3 })]));
+      expect(report.body.summary).toEqual(
+        expect.objectContaining({
+          clientCount: expect.any(Number),
+          photosTaken: expect.any(Number),
+          moneyReceived: expect.any(Number),
+        }),
+      );
+      expect(report.body.payments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            customerName: 'Report Client',
+            amount: 45000,
+            receivedBy: 'Test Cashier',
+          }),
+        ]),
+      );
+      expect(report.body.urgentClients).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: serviceId })]),
+      );
+      expect(report.body.clients).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            customerName: 'Report Client',
+            phoneNumber: '+250788990777',
+            photosTaken: 6,
+            softPhotos: 4,
+            hardPhotos: 2,
+            paidAmount: 45000,
+            remainingAmount: 55000,
+            serviceStatus: 'IN_PROGRESS',
+          }),
+        ]),
+      );
+      expect(report.body.photographerWork).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            photographerName: 'Test Photographer',
+            editedPhotos: 13,
+            notes: 'Family portraits',
+          }),
+        ]),
+      );
+      expect(report.body.photographerTotals).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            photographerUserId: photographerId,
+            photosAssigned: 4,
+            photosEdited: 3,
+          }),
+        ]),
+      );
+      expect(report.body.photographerTasks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: assignmentId,
+            status: 'COMPLETED',
+            editedPhotos: 3,
+          }),
+        ]),
+      );
 
       // Delivery is allowed only after the full agreed balance has been paid.
       await request(app.getHttpServer())
@@ -425,15 +539,36 @@ describe('PaymentController (integration)', () => {
         .set(auth(tokens.cashier))
         .send({ status: 'SERVED' })
         .expect(200);
+      expect(notifyUser).toHaveBeenCalledWith(
+        photographerId,
+        'Studio service status updated',
+        expect.stringContaining('served'),
+        expect.objectContaining({
+          type: 'studio_service_status',
+          studioServiceId: serviceId,
+        }),
+      );
       const refreshed = await request(app.getHttpServer())
         .get(`/api/v1/studio-reports?from=${reportDate}&to=${reportDate}`)
         .set(auth(tokens.owner))
         .expect(200);
-      expect(refreshed.body.clients).toEqual(expect.arrayContaining([
-        expect.objectContaining({ id: serviceId, paidAmount: 100000, remainingAmount: 0, serviceStatus: 'SERVED', needsUrgentService: false }),
-      ]));
-      expect(refreshed.body.urgentClients).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: serviceId })]));
-      expect(refreshed.body.servedClients).toEqual(expect.arrayContaining([expect.objectContaining({ id: serviceId })]));
+      expect(refreshed.body.clients).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: serviceId,
+            paidAmount: 100000,
+            remainingAmount: 0,
+            serviceStatus: 'SERVED',
+            needsUrgentService: false,
+          }),
+        ]),
+      );
+      expect(refreshed.body.urgentClients).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: serviceId })]),
+      );
+      expect(refreshed.body.servedClients).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: serviceId })]),
+      );
     });
   });
 });

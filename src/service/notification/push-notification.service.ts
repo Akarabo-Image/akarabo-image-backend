@@ -65,6 +65,12 @@ export class PushNotificationService {
     data: Record<string, string>,
   ): Promise<void> {
     try {
+      const activeUser = await this.users.findOne({
+        select: { id: true },
+        where: { id: userId, isActive: true },
+      });
+      if (!activeUser) return;
+
       const devices = await this.tokens.find({ where: { userId } });
       if (devices.length === 0) return;
       await this.sendToDevices(devices, title, body, data);
